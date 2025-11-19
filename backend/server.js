@@ -52,6 +52,14 @@ app.use(cors({
 // This ensures DB connection on each request and reuses existing connections
 app.use(ensureDbConnection);
 
+//default route
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Welcome to the Photography Studio API',
+    version: '1.0.0',
+  });
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ 
