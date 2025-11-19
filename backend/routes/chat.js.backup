@@ -1,0 +1,121 @@
+import express from 'express';
+import { v4 as uuidv4 } from 'uuid';
+import { GoogleGenAI } from '@google/genai';
+
+const router = express.Router();
+
+// Initialize Google Gemini AI
+const ai = new GoogleGenAI({
+  apiKey: process.env.GOOGLE_API_KEY
+});
+
+// System message for the chatbot
+const SYSTEM_MESSAGE = `You are a friendly and professional virtual assistant for an elegant photography studio. Your role is to:
+
+1. Warmly welcome visitors and engage them in conversation about their photography needs
+2. Share information about the studio's services including weddings, portraits, events, and family photography
+3. Describe the studio's artistic style: timeless, elegant, authentic, with masterful use of natural light and composition
+4. Answer questions about packages and pricing when asked
+5. When you detect booking interest, guide the conversation to collect:
+   - Preferred shoot type (wedding, portrait, event, family, other)
+   - Preferred date or timeframe
+   - Name and contact information (phone or email)
+   - Optionally: How they found the studio
+6. Keep responses conversational, warm, and concise (2-3 sentences typically)
+7. After collecting lead information, thank them and assure them the studio will reach out within 24 hours
+
+Be helpful, professional, and genuinely interested in their photography needs.`;
+
+// Google Gemini AI integration
+async function getLLMResponse(message, sessionId, history = []) {
+  try {
+    // Use Google Gemini API
+    if (process.env.GOOGLE_API_KEY) {
+      // Build conversation history for context
+      const conversationHistory = history
+        .map(h => `${h.role === 'user' ? 'User' : 'Assistant'}: ${h.content}`)
+        .join('\n');
+      
+      // Construct the full prompt with system message and history
+      const fullPrompt = `${SYSTEM_MESSAGE}
+
+${conversationHistory ? `Previous conversation:\n${conversationHistory}\n\n` : ''}User: ${message}
+  try {
+    const { session_id, message } = req.body;
+    const db = req.app.locals.db;
+    
+    if (!session_id || !message) {
+      return res.status(400).json({ 
+        error: 'Missing required fields: session_id and message' 
+      });
+    }
+    
+    // Save user message
+    const userMessage = {
+      id: uuidv4(),
+      session_id,
+      role: 'user',
+      content: message,
+      timestamp: new Date().toISOString()
+    };
+    
+    await db.collection('messages').insertOne(userMessage);
+    
+    // Get chat history for context
+    const history = await db.collection('messages')
+      .find({ session_id })
+      .sort({ timestamp: 1 })
+      .limit(20)
+      .toArray();
+    
+    // Get LLM response
+    const responseText = await getLLMResponse(message, session_id, history);
+    
+    // Save assistant response
+    const assistantMessage = {
+      id: uuidv4(),
+      session_id,
+      role: 'assistant',
+      content: responseText,
+      timestamp: new Date().toISOString()
+    };
+    
+    await db.collection('messages').insertOne(assistantMessage);
+    
+    res.json({
+      response: responseText,
+      session_id
+    });
+    
+  } catch (error) {
+    console.error('Chat error:', error);
+    res.status(500).json({ 
+      error: 'Failed to process chat message',
+      details: error.message 
+    });
+  }
+});
+
+// GET /api/messages/:session_id - Get chat history
+router.get('/messages/:session_id', async (req, res) => {
+  try {
+    const { session_id } = req.params;
+    const db = req.app.locals.db;
+    
+    const messages = await db.collection('messages')
+      .find({ session_id }, { projection: { _id: 0 } })
+      .sort({ timestamp: 1 })
+      .toArray();
+    
+    res.json(messages);
+    
+  } catch (error) {
+    console.error('Get messages error:', error);
+    res.status(500).json({ 
+      error: 'Failed to retrieve messages',
+      details: error.message 
+    });
+  }
+});
+
+export default router;

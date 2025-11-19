@@ -1,0 +1,39 @@
+{
+  "name": "photography-chatbot-backend",
+  "version": "1.0.0",
+  "description": "Voice-first chatbot backend for photography studio",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file=.env server.js",
+    "dev": "nodemon --exec 'node --env-file=.env' server.js",
+    "seed": "node --env-file=.env seedDatabase.js",
+    "seed:feedback": "node --env-file=.env seedFeedback.js",
+    "test": "jest"
+  },
+  "keywords": [
+    "chatbot",
+    "photography",
+    "express",
+    "mongodb"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google/genai": "^1.29.0",
+    "axios": "^1.6.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "mongodb": "^6.3.0",
+    "morgan": "^1.10.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2",
+    "supertest": "^6.3.3"
+  }
+}
